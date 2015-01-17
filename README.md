@@ -23,7 +23,7 @@ Basic Concept
    of the `@EnableHttpInvokerAutoExport` annotation
 3. On the client-side, use the `@EnableHttpInvokerAutoProxy` annotation in your Spring configuration class
   * Proxies will be automatically created for every annotated interface that is 
-  found in the base package of the annotated configuration class
+   found in the classpath using the package of the annotated configuration class as base package by default
   * The base package can also be explicitly specified using the `basePackages` property
    of the `@EnableHttpInvokerAutoProxy` annotation
   * For remote invocation the service URL is build from a base URL and the individual mapping path of the service
