@@ -45,4 +45,7 @@ Now open another terminal and execute this command:
 java -jar sample/client/target/sample-client.jar
 ```
 
+If everything worked out as expected, you should see the client printing out the 
+current server time every 5 seconds as pictured in the screenshot below.
 
+![Alt Screenshot](screenshot.png)
