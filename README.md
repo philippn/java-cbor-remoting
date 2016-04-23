@@ -18,7 +18,7 @@ Basic Concept
 1. Mark the interfaces of services that you wish to export as remote service using the `@RemoteExport` annotation
 2. On the server-side, use the `@EnableHttpInvokerAutoExport` annotation in your Spring configuration class
   * A Spring bean implementing the interface **must** be available in the application context
-  * By default the service will be exported with the mapping path `/<InterfaceName>`
+  * By default the service will be exported with the mapping path `/remoting/<InterfaceName>`
   * The default mapping path can be overridden using the `mappingPath` property
    of the `@EnableHttpInvokerAutoExport` annotation
 3. On the client-side, use the `@EnableHttpInvokerAutoProxy` annotation in your Spring configuration class
