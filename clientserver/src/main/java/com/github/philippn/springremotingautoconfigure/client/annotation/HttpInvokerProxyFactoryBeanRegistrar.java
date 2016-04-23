@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Philipp Nanz
+ * Copyright (C) 2015-2016 Philipp Nanz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,56 +18,41 @@ package com.github.philippn.springremotingautoconfigure.client.annotation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean;
-import org.springframework.remoting.httpinvoker.HttpInvokerRequestExecutor;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 import com.github.philippn.springremotingautoconfigure.annotation.RemoteExport;
+import com.github.philippn.springremotingautoconfigure.util.RemotingUtils;
 
 /**
  * @author Philipp Nanz
  */
 @Configuration
-public class HttpInvokerProxyFactoryBeanRegistrar implements BeanDefinitionRegistryPostProcessor {
+public class HttpInvokerProxyFactoryBeanRegistrar implements ImportBeanDefinitionRegistrar {
 
 	final static Logger logger = LoggerFactory.getLogger(HttpInvokerProxyFactoryBeanRegistrar.class);
 
-	@Autowired
-	private HttpInvokerRequestExecutor httpInvokerRequestExecutor;
+	private static final Set<String> alreadyProxiedSet = 
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
 	@Value("${remote.baseUrl}")
 	private String baseUrl = "http://localhost:8080";
-
-	/**
-	 * @return the httpInvokerRequestExecutor
-	 */
-	public HttpInvokerRequestExecutor getHttpInvokerRequestExecutor() {
-		return httpInvokerRequestExecutor;
-	}
-
-	/**
-	 * @param httpInvokerRequestExecutor the httpInvokerRequestExecutor to set
-	 */
-	public void setHttpInvokerRequestExecutor(
-			HttpInvokerRequestExecutor httpInvokerRequestExecutor) {
-		this.httpInvokerRequestExecutor = httpInvokerRequestExecutor;
-	}
 
 	/**
 	 * @return the baseUrl
@@ -84,21 +69,10 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements BeanDefinitionRegis
 	}
 
 	/* (non-Javadoc)
-	 * @see org.springframework.beans.factory.config.BeanFactoryPostProcessor#postProcessBeanFactory(org.springframework.beans.factory.config.ConfigurableListableBeanFactory)
+	 * @see org.springframework.context.annotation.ImportBeanDefinitionRegistrar#registerBeanDefinitions(org.springframework.core.type.AnnotationMetadata, org.springframework.beans.factory.support.BeanDefinitionRegistry)
 	 */
 	@Override
-	public void postProcessBeanFactory(
-			ConfigurableListableBeanFactory beanFactory) throws BeansException {
-		// Nadda
-	}
-
-	/* (non-Javadoc)
-	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry(org.springframework.beans.factory.support.BeanDefinitionRegistry)
-	 */
-	@Override
-	public void postProcessBeanDefinitionRegistry(
-			BeanDefinitionRegistry registry) throws BeansException {
-		
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 		Set<String> basePackages = new HashSet<>();
 		for (String beanName : registry.getBeanDefinitionNames()) {
 			BeanDefinition definition = registry.getBeanDefinition(beanName);
@@ -121,6 +95,10 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements BeanDefinitionRegis
 			}
 		}
 		
+		if (basePackages.isEmpty()) {
+			return;
+		}
+		
 		ClassPathScanningCandidateComponentProvider scanner =
 				new ClassPathScanningCandidateComponentProvider(false) {
 
@@ -140,7 +118,8 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements BeanDefinitionRegis
 			for (BeanDefinition definition : scanner.findCandidateComponents(basePackage)) {
 				if (definition.getBeanClassName() != null) {
 					try {
-						Class<?> resolvedClass = ClassUtils.forName(definition.getBeanClassName(), null);
+						Class<?> resolvedClass = 
+								ClassUtils.forName(definition.getBeanClassName(), null);
 						setupProxy(resolvedClass, registry);
 					} catch (ClassNotFoundException e) {
 						throw new IllegalStateException("Unable to inspect class " + 
@@ -152,24 +131,23 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements BeanDefinitionRegis
 	}
 
 	protected void setupProxy(Class<?> clazz, BeanDefinitionRegistry registry) {
-		Assert.isTrue(clazz.isInterface(), "Annotation @RemoteExport may only be used on interfaces");
+		Assert.isTrue(clazz.isInterface(), 
+				"Annotation @RemoteExport may only be used on interfaces");
+		
+		if (alreadyProxiedSet.contains(clazz.getName())) {
+			return;
+		}
+		alreadyProxiedSet.add(clazz.getName());
 		
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder
 				.genericBeanDefinition(HttpInvokerProxyFactoryBean.class)
+				.setLazyInit(true)
 				.addPropertyValue("serviceInterface", clazz)
-				.addPropertyValue("serviceUrl", getBaseUrl() + getMappingPath(clazz));
+				.addPropertyValue("serviceUrl", getBaseUrl() + RemotingUtils.buildMappingPath(clazz));
 		
 		registry.registerBeanDefinition(clazz.getSimpleName() + "Proxy", 
 				builder.getBeanDefinition());
 		
-		logger.info("Created HttpInvokerProxyFactoryBean for " + clazz.getSimpleName());	
-	}
-
-	protected String getMappingPath(Class<?> clazz) {
-		RemoteExport definition = AnnotationUtils.findAnnotation(clazz, RemoteExport.class);
-		if (definition.mappingPath().length() > 0) {
-			return definition.mappingPath();
-		}
-		return "/" + clazz.getSimpleName();
+		logger.info("Created HttpInvokerProxyFactoryBean for " + clazz.getSimpleName());
 	}
 }

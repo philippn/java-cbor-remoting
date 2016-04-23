@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Philipp Nanz
+ * Copyright (C) 2015-2016 Philipp Nanz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,4 +36,11 @@ public @interface RemoteExport {
 	 * Defaults to the simple name of the interface on which this annotation is declared.
 	 */
 	String mappingPath() default "";
+
+	/**
+	 * Set whether to register a RemoteInvocationTraceInterceptor for exported services.
+	 * 
+	 * @see org.springframework.remoting.support.RemoteExporter#setRegisterTraceInterceptor(boolean)
+	 */
+	boolean registerTraceInterceptor() default true;
 }

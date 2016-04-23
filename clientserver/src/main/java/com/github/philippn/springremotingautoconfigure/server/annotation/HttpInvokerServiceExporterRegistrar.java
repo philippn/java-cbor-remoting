@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Philipp Nanz
+ * Copyright (C) 2015-2016 Philipp Nanz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,55 +15,63 @@
  */
 package com.github.philippn.springremotingautoconfigure.server.annotation;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.core.type.MethodMetadata;
 import org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
 import com.github.philippn.springremotingautoconfigure.annotation.RemoteExport;
+import com.github.philippn.springremotingautoconfigure.util.RemotingUtils;
 
 /**
  * @author Philipp Nanz
  */
 @Configuration
-public class HttpInvokerServiceExporterRegistrar implements BeanDefinitionRegistryPostProcessor {
+public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinitionRegistrar {
 
 	final static Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
 
-	/* (non-Javadoc)
-	 * @see org.springframework.beans.factory.config.BeanFactoryPostProcessor#postProcessBeanFactory(org.springframework.beans.factory.config.ConfigurableListableBeanFactory)
-	 */
-	@Override
-	public void postProcessBeanFactory(
-			ConfigurableListableBeanFactory beanFactory) throws BeansException {
-		// Nadda
-	}
+	private static final Set<String> alreadyExportedSet = 
+			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
 	/* (non-Javadoc)
-	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry(org.springframework.beans.factory.support.BeanDefinitionRegistry)
+	 * @see org.springframework.context.annotation.ImportBeanDefinitionRegistrar#registerBeanDefinitions(org.springframework.core.type.AnnotationMetadata, org.springframework.beans.factory.support.BeanDefinitionRegistry)
 	 */
 	@Override
-	public void postProcessBeanDefinitionRegistry(
-			BeanDefinitionRegistry registry) throws BeansException {
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
 		for (String beanName : registry.getBeanDefinitionNames()) {
 			BeanDefinition definition = registry.getBeanDefinition(beanName);
-			if (definition.getBeanClassName() != null) {
+			String className = definition.getBeanClassName();
+			if (className == null && definition.getSource() instanceof MethodMetadata) {
+				className = ((MethodMetadata) definition.getSource()).getReturnTypeName();
+			}
+			if (className != null) {
 				try {
-					Class<?> resolvedClass = ClassUtils.forName(definition.getBeanClassName(), null);
-					Class<?>[] beanInterfaces = resolvedClass.getInterfaces();
-					for (Class<?> clazz : beanInterfaces) {
-						if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, clazz)) {
-							setupExport(clazz, beanName, registry);
+					Class<?> resolvedClass = ClassUtils.forName(className, null);
+					if (resolvedClass.isInterface()) {
+						if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, resolvedClass)) {
+							setupExport(resolvedClass, beanName, registry);
 						}
+					} else {
+						Class<?>[] beanInterfaces = resolvedClass.getInterfaces();
+						for (Class<?> clazz : beanInterfaces) {
+							if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, clazz)) {
+								setupExport(clazz, beanName, registry);
+							}
+						}	
 					}
 				} catch (ClassNotFoundException e) {
 					throw new IllegalStateException("Unable to inspect class " + 
@@ -75,25 +83,33 @@ public class HttpInvokerServiceExporterRegistrar implements BeanDefinitionRegist
 
 	private void setupExport(Class<?> clazz, String beanName,
 			BeanDefinitionRegistry registry) {
-		Assert.isTrue(clazz.isInterface(), "Annotation @RemoteExport may only be used on interfaces");
+		Assert.isTrue(clazz.isInterface(), 
+				"Annotation @RemoteExport may only be used on interfaces");
+		
+		if (alreadyExportedSet.contains(clazz.getName())) {
+			return;
+		}
+		alreadyExportedSet.add(clazz.getName());
 		
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder
 				.genericBeanDefinition(HttpInvokerServiceExporter.class)
+				.setLazyInit(true)
+				.addDependsOn(beanName)
 				.addPropertyReference("service", beanName)
-				.addPropertyValue("serviceInterface", clazz);
+				.addPropertyValue("serviceInterface", clazz)
+				.addPropertyValue("registerTraceInterceptor", 
+						getRegisterTraceInterceptor(clazz));
 		
-		String mappingPath = getMappingPath(clazz);
+		String mappingPath = RemotingUtils.buildMappingPath(clazz);
 		
 		registry.registerBeanDefinition(mappingPath, builder.getBeanDefinition());
 		
-		logger.info("Mapping HttpInvokerServiceExporter for " + clazz.getSimpleName() + " to [" + mappingPath + "]");
+		logger.info("Mapping HttpInvokerServiceExporter for "
+				+ clazz.getSimpleName() + " to [" + mappingPath + "]");
 	}
 
-	protected String getMappingPath(Class<?> clazz) {
+	protected boolean getRegisterTraceInterceptor(Class<?> clazz) {
 		RemoteExport definition = AnnotationUtils.findAnnotation(clazz, RemoteExport.class);
-		if (definition.mappingPath().length() > 0) {
-			return definition.mappingPath();
-		}
-		return "/" + clazz.getSimpleName();
+		return definition.registerTraceInterceptor();
 	}
 }
