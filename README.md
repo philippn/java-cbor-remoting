@@ -20,7 +20,7 @@ Basic Concept
   * A Spring bean implementing the interface **must** be available in the application context
   * By default the service will be exported with the mapping path `/remoting/<InterfaceName>`
   * The default mapping path can be overridden using the `mappingPath` property
-   of the `@EnableHttpInvokerAutoExport` annotation
+   of the `@RemoteExport` annotation
 3. On the client-side, use the `@EnableHttpInvokerAutoProxy` annotation in your Spring configuration class
   * Proxies will be automatically created for every annotated interface that is 
    found in the classpath using the package of the annotated configuration class as base package by default
