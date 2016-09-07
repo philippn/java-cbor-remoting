@@ -22,9 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanReference;
+import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.AnnotationMetadata;
@@ -39,7 +40,6 @@ import com.github.philippn.springremotingautoconfigure.util.RemotingUtils;
 /**
  * @author Philipp Nanz
  */
-@Configuration
 public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinitionRegistrar {
 
 	final static Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
@@ -60,16 +60,18 @@ public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinition
 			}
 			if (className != null) {
 				try {
+					RuntimeBeanReference serviceReference = new RuntimeBeanReference(beanName);
+					serviceReference.setSource(this);
 					Class<?> resolvedClass = ClassUtils.forName(className, null);
 					if (resolvedClass.isInterface()) {
 						if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, resolvedClass)) {
-							setupExport(resolvedClass, beanName, registry);
+							setupExport(resolvedClass, serviceReference, registry);
 						}
 					} else {
 						Class<?>[] beanInterfaces = resolvedClass.getInterfaces();
 						for (Class<?> clazz : beanInterfaces) {
 							if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, clazz)) {
-								setupExport(clazz, beanName, registry);
+								setupExport(clazz, serviceReference, registry);
 							}
 						}	
 					}
@@ -81,7 +83,7 @@ public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinition
 		}
 	}
 
-	private void setupExport(Class<?> clazz, String beanName,
+	protected void setupExport(Class<?> clazz, BeanReference serviceReference, 
 			BeanDefinitionRegistry registry) {
 		Assert.isTrue(clazz.isInterface(), 
 				"Annotation @RemoteExport may only be used on interfaces");
@@ -94,8 +96,7 @@ public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinition
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder
 				.genericBeanDefinition(HttpInvokerServiceExporter.class)
 				.setLazyInit(true)
-				.addDependsOn(beanName)
-				.addPropertyReference("service", beanName)
+				.addPropertyValue("service", serviceReference)
 				.addPropertyValue("serviceInterface", clazz)
 				.addPropertyValue("registerTraceInterceptor", 
 						getRegisterTraceInterceptor(clazz));

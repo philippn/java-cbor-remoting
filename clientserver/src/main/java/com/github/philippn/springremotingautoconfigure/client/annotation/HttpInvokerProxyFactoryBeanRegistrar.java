@@ -28,7 +28,6 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.AnnotationMetadata;
@@ -43,7 +42,6 @@ import com.github.philippn.springremotingautoconfigure.util.RemotingUtils;
 /**
  * @author Philipp Nanz
  */
-@Configuration
 public class HttpInvokerProxyFactoryBeanRegistrar implements ImportBeanDefinitionRegistrar {
 
 	final static Logger logger = LoggerFactory.getLogger(HttpInvokerProxyFactoryBeanRegistrar.class);
