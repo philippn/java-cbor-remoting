@@ -141,11 +141,19 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements ImportBeanDefinitio
 				.genericBeanDefinition(HttpInvokerProxyFactoryBean.class)
 				.setLazyInit(true)
 				.addPropertyValue("serviceInterface", clazz)
-				.addPropertyValue("serviceUrl", getBaseUrl() + RemotingUtils.buildMappingPath(clazz));
+				.addPropertyValue("serviceUrl", 
+						customizeBaseUrl(getBaseUrl(), clazz) + RemotingUtils.buildMappingPath(clazz));
 		
 		registry.registerBeanDefinition(clazz.getSimpleName() + "Proxy", 
 				builder.getBeanDefinition());
 		
 		logger.info("Created HttpInvokerProxyFactoryBean for " + clazz.getSimpleName());
+	}
+
+	protected String customizeBaseUrl(String baseUrl, Class<?> clazz) {
+		// https://github.com/philippn/spring-remoting-autoconfigure/issues/1
+		// One could imagine a lookup from a properties file in the format:
+		// FooService=http://1.2.3.4:8080
+		return baseUrl;
 	}
 }
