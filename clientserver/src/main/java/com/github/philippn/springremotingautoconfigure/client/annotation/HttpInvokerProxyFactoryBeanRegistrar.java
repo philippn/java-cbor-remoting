@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -138,14 +139,15 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements ImportBeanDefinitio
 		alreadyProxiedSet.add(clazz.getName());
 		
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder
-				.genericBeanDefinition(HttpInvokerProxyFactoryBean.class)
+				.rootBeanDefinition(HttpInvokerProxyFactoryBean.class)
 				.setLazyInit(true)
 				.addPropertyValue("serviceInterface", clazz)
 				.addPropertyValue("serviceUrl", 
 						customizeBaseUrl(getBaseUrl(), clazz) + RemotingUtils.buildMappingPath(clazz));
+		RootBeanDefinition beanDefinition = (RootBeanDefinition) builder.getBeanDefinition();
+		beanDefinition.setTargetType(clazz);
 		
-		registry.registerBeanDefinition(clazz.getSimpleName() + "Proxy", 
-				builder.getBeanDefinition());
+		registry.registerBeanDefinition(clazz.getSimpleName() + "Proxy", beanDefinition);
 		
 		logger.info("Created HttpInvokerProxyFactoryBean for " + clazz.getSimpleName());
 	}
