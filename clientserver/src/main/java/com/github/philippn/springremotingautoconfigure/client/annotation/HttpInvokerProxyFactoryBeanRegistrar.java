@@ -47,7 +47,7 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements ImportBeanDefinitio
 
 	final static Logger logger = LoggerFactory.getLogger(HttpInvokerProxyFactoryBeanRegistrar.class);
 
-	private static final Set<String> alreadyProxiedSet = 
+	private final Set<String> alreadyProxiedSet = 
 			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
 	@Value("${remote.baseUrl}")
@@ -145,6 +145,7 @@ public class HttpInvokerProxyFactoryBeanRegistrar implements ImportBeanDefinitio
 				.addPropertyValue("serviceUrl", 
 						customizeBaseUrl(getBaseUrl(), clazz) + RemotingUtils.buildMappingPath(clazz));
 		RootBeanDefinition beanDefinition = (RootBeanDefinition) builder.getBeanDefinition();
+		beanDefinition.setSynthetic(true);
 		beanDefinition.setTargetType(clazz);
 		
 		registry.registerBeanDefinition(clazz.getSimpleName() + "Proxy", beanDefinition);

@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
@@ -42,7 +43,7 @@ public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinition
 
 	final static Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
 
-	private static final Set<String> alreadyExportedSet = 
+	private final Set<String> alreadyExportedSet = 
 			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
 	/* (non-Javadoc)
@@ -95,10 +96,11 @@ public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinition
 				.addPropertyValue("serviceInterface", clazz)
 				.addPropertyValue("registerTraceInterceptor", 
 						getRegisterTraceInterceptor(clazz));
+		AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
+		beanDefinition.setSynthetic(true);
 		
 		String mappingPath = RemotingUtils.buildMappingPath(clazz);
-		
-		registry.registerBeanDefinition(mappingPath, builder.getBeanDefinition());
+		registry.registerBeanDefinition(mappingPath, beanDefinition);
 		
 		logger.info("Mapping HttpInvokerServiceExporter for "
 				+ clazz.getSimpleName() + " to [" + mappingPath + "]");
