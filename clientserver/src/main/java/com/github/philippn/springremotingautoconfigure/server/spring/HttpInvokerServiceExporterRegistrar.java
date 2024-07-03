@@ -1,24 +1,22 @@
 /*
- * Copyright (C) 2015-2016 Philipp Nanz
+ * Copyright (C) 2015-2024 Philipp Nanz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at 
+ * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software 
- * distributed under the License is distributed on an "AS IS" BASIS, 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.philippn.springremotingautoconfigure.server.annotation;
+package com.github.philippn.springremotingautoconfigure.server.spring;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.github.philippn.springremotingautoconfigure.annotation.RemoteExport;
+import com.github.philippn.springremotingautoconfigure.util.RemotingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -29,22 +27,21 @@ import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.MethodMetadata;
-import org.springframework.remoting.httpinvoker.HttpInvokerServiceExporter;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
-import com.github.philippn.springremotingautoconfigure.annotation.RemoteExport;
-import com.github.philippn.springremotingautoconfigure.util.RemotingUtils;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Philipp Nanz
  */
 public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinitionRegistrar {
 
-	final static Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
+	static final Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
 
-	private final Set<String> alreadyExportedSet = 
-			Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+	private final Set<String> alreadyExportedSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	/* (non-Javadoc)
 	 * @see org.springframework.context.annotation.ImportBeanDefinitionRegistrar#registerBeanDefinitions(org.springframework.core.type.AnnotationMetadata, org.springframework.beans.factory.support.BeanDefinitionRegistry)
@@ -88,26 +85,17 @@ public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinition
 			return;
 		}
 		alreadyExportedSet.add(clazz.getName());
-		
+
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder
-				.genericBeanDefinition(HttpInvokerServiceExporter.class)
-				.setLazyInit(true)
+				.genericBeanDefinition(RemotingController.class)
 				.addPropertyReference("service", beanName)
-				.addPropertyValue("serviceInterface", clazz)
-				.addPropertyValue("registerTraceInterceptor", 
-						getRegisterTraceInterceptor(clazz));
+				.addPropertyValue("serviceInterface", clazz);
 		AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
 		beanDefinition.setSynthetic(true);
-		
+
 		String mappingPath = RemotingUtils.buildMappingPath(clazz);
 		registry.registerBeanDefinition(mappingPath, beanDefinition);
-		
-		logger.info("Mapping HttpInvokerServiceExporter for "
-				+ clazz.getSimpleName() + " to [" + mappingPath + "]");
-	}
 
-	protected Boolean getRegisterTraceInterceptor(Class<?> clazz) {
-		RemoteExport definition = AnnotationUtils.findAnnotation(clazz, RemoteExport.class);
-		return Boolean.valueOf(definition.registerTraceInterceptor());
+		logger.info("Mapping HttpInvokerServiceExporter for {} to [{}]", clazz.getSimpleName(), mappingPath);
 	}
 }
