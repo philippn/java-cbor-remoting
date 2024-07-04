@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.philippn.springremotingautoconfigure.test.service.exception;
+package com.github.philippn.springremotingautoconfigure.client.spring;
 
-public class PingException extends Exception {
-    public PingException(String message) {
-        super(message);
+public class MethodInvocationException extends RuntimeException {
+    public MethodInvocationException(Throwable cause) {
+        super(cause);
     }
 }

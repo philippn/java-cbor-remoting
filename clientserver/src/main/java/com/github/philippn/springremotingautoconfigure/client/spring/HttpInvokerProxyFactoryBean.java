@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
+import com.github.philippn.springremotingautoconfigure.mixin.ThrowableMixin;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -38,6 +39,7 @@ public class HttpInvokerProxyFactoryBean implements FactoryBean<Object>, Initial
 	private final CloseableHttpClient httpClient = HttpClients.createDefault();
 	private final CBORFactory cborFactory = new CBORFactory(CBORMapper.builder()
 			.visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+			.addMixIn(Throwable.class, ThrowableMixin.class)
 			.findAndAddModules()
 			.build());
 
@@ -55,7 +57,11 @@ public class HttpInvokerProxyFactoryBean implements FactoryBean<Object>, Initial
 	public Object invoke(MethodInvocation invocation) throws Throwable {
 		HttpPost post = new HttpPost(serviceUrl);
 		post.setEntity(new MethodInvocationEntity(invocation, cborFactory));
-		return httpClient.execute(post, new MethodInvocationResponseHandler(invocation, cborFactory));
+		try {
+			return httpClient.execute(post, new MethodInvocationResponseHandler(invocation, cborFactory));
+		} catch (MethodInvocationException e) {
+			throw e.getCause();
+		}
 	}
 
 	/**

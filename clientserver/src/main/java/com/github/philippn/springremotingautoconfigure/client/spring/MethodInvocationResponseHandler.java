@@ -43,7 +43,23 @@ public class MethodInvocationResponseHandler implements HttpClientResponseHandle
             return null;
         }
         try (CBORParser input = cborFactory.createParser(response.getEntity().getContent())) {
-            return input.readValueAs(methodInvocation.getMethod().getReturnType());
+            input.nextToken();
+            input.nextToken();
+            boolean success = input.getValueAsBoolean();
+            if (success) {
+                input.nextToken();
+                return input.readValueAs(methodInvocation.getMethod().getReturnType());
+            } else {
+                input.nextToken();
+                String exceptionClassName = input.getValueAsString();
+                try {
+                    Class<?> exceptionClass = Class.forName(exceptionClassName);
+                    input.nextToken();
+                    throw new MethodInvocationException((Throwable) input.readValueAs(exceptionClass));
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException(String.format("Exception could not be deserialized: %s", exceptionClassName));
+                }
+            }
         }
     }
 }

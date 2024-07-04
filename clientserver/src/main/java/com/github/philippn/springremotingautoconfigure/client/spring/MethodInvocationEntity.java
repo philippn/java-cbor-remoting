@@ -42,7 +42,7 @@ public class MethodInvocationEntity extends AbstractHttpEntity {
             output.writeString(methodInvocation.getMethod().getName());
             output.writeNumber(methodInvocation.getMethod().getParameterCount());
             for (int i = 0; i < methodInvocation.getMethod().getParameterCount(); i++) {
-                output.writeObject(methodInvocation.getMethod().getParameters()[i]);
+                output.writeObject(methodInvocation.getArguments()[i]);
             }
             output.writeEndArray();
         }

@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.philippn.springremotingautoconfigure.test.service.exception;
+package com.github.philippn.springremotingautoconfigure.mixin;
 
-public class PingException extends Exception {
-    public PingException(String message) {
-        super(message);
-    }
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
+
+@JsonIncludeProperties("message")
+public abstract class ThrowableMixin {
+
 }

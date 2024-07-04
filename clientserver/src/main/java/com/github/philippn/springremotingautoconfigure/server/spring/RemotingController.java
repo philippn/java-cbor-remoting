@@ -21,6 +21,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
+import com.github.philippn.springremotingautoconfigure.mixin.ThrowableMixin;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.ModelAndView;
@@ -39,6 +40,7 @@ public class RemotingController implements Controller {
 
     private static final CBORFactory cborFactory = new CBORFactory(CBORMapper.builder()
             .visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+            .addMixIn(Throwable.class, ThrowableMixin.class)
             .findAndAddModules()
             .build());
 
@@ -77,14 +79,28 @@ public class RemotingController implements Controller {
                 input.nextToken();
                 args[i] = input.readValueAs(argumentClazz);
             }
-            Object ret = method.get().invoke(service, args);
-            if (!Void.class.equals(method.get().getReturnType())) {
+            try {
+                Object ret = method.get().invoke(service, args);
                 try (CBORGenerator output = cborFactory.createGenerator(response.getOutputStream())) {
-                    output.writeObject(ret);
+                    output.writeStartArray();
+                    output.writeBoolean(true);
+                    if (!Void.class.equals(method.get().getReturnType())) {
+                        output.writeObject(ret);
+                    }
+                    output.writeEndArray();
                 }
+                return null;
+            } catch (InvocationTargetException e) {
+                try (CBORGenerator output = cborFactory.createGenerator(response.getOutputStream())) {
+                    output.writeStartArray();
+                    output.writeBoolean(false);
+                    output.writeString(e.getCause().getClass().getName());
+                    output.writeObject(e.getCause());
+                    output.writeEndArray();
+                }
+                return null;
             }
-            return null;
-        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
+        } catch (IllegalAccessException | IOException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }

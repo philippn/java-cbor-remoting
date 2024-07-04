@@ -17,12 +17,14 @@ package com.github.philippn.springremotingautoconfigure.test;
 
 import com.github.philippn.springremotingautoconfigure.test.service.PingService;
 import com.github.philippn.springremotingautoconfigure.test.service.PingServiceWithMappingPath;
+import com.github.philippn.springremotingautoconfigure.test.service.exception.PingException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author Philipp Nanz
@@ -51,10 +53,10 @@ class HttpInvokerTest {
 	@Test
 	public void testException() {
 		try {
-			Assert.assertEquals("pong", pingServiceProxy.ping("pong"));
-			Assert.fail();
+			assertEquals("pong", pingServiceProxy.ping("pong"));
+			fail();
 		} catch (PingException e) {
-			Assert.assertEquals("Unsupported message: pong", e.getMessage());
+			assertEquals("Unsupported message: pong", e.getMessage());
 		}
 	}
 }
