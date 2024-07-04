@@ -15,6 +15,9 @@
  */
 package com.github.philippn.springremotingautoconfigure.test;
 
+import com.github.philippn.springremotingautoconfigure.test.service.PingService;
+import com.github.philippn.springremotingautoconfigure.test.service.PingServiceWithMappingPath;
+import com.github.philippn.springremotingautoconfigure.test.service.exception.PingException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,9 +26,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.WebIntegrationTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import com.github.philippn.springremotingautoconfigure.test.service.PingService;
-import com.github.philippn.springremotingautoconfigure.test.service.PingServiceWithMappingPath;
 
 /**
  * @author Philipp Nanz
@@ -44,12 +44,22 @@ public class HttpInvokerTest {
 	private PingServiceWithMappingPath pingServiceWithMappingPathProxy;
 
 	@Test
-	public void testDefaultMappingPath() {
-		Assert.assertEquals("pong", pingServiceProxy.ping());
+	public void testDefaultMappingPath() throws PingException {
+		Assert.assertEquals("pong", pingServiceProxy.ping("ping"));
 	}
 
 	@Test
-	public void testSpecifiedMappingPath() {
-		Assert.assertEquals("pong", pingServiceWithMappingPathProxy.ping());
+	public void testSpecifiedMappingPath() throws PingException {
+		Assert.assertEquals("pong", pingServiceWithMappingPathProxy.ping("ping"));
+	}
+
+	@Test
+	public void testException() {
+		try {
+			Assert.assertEquals("pong", pingServiceProxy.ping("pong"));
+			Assert.fail();
+		} catch (PingException e) {
+			Assert.assertEquals("Unsupported message: pong", e.getMessage());
+		}
 	}
 }

@@ -16,6 +16,7 @@
 package com.github.philippn.springremotingautoconfigure.test.service;
 
 import com.github.philippn.springremotingautoconfigure.annotation.RemoteExport;
+import com.github.philippn.springremotingautoconfigure.test.service.exception.PingException;
 
 /**
  * @author Philipp Nanz
@@ -25,7 +26,8 @@ public interface PingServiceWithMappingPath {
 
 	/**
 	 * Returns <code>pong</code>.
+	 * @param message the message
 	 * @return <code>pong</code>
 	 */
-	public String ping();
+	String ping(String message) throws PingException;
 }

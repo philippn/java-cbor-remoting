@@ -15,6 +15,8 @@
  */
 package com.github.philippn.springremotingautoconfigure.test.service.impl;
 
+import com.github.philippn.springremotingautoconfigure.test.service.PingServiceWithMappingPath;
+import com.github.philippn.springremotingautoconfigure.test.service.exception.PingException;
 import org.springframework.stereotype.Service;
 
 import com.github.philippn.springremotingautoconfigure.test.service.PingService;
@@ -23,13 +25,13 @@ import com.github.philippn.springremotingautoconfigure.test.service.PingService;
  * @author Philipp Nanz
  */
 @Service
-public class PingServiceImpl implements PingService {
+public class PingServiceImpl implements PingService, PingServiceWithMappingPath {
 
-	/* (non-Javadoc)
-	 * @see com.github.philippn.springremotingautoconfigure.test.service.PingService#ping()
-	 */
 	@Override
-	public String ping() {
-		return "pong";
+	public String ping(String message) throws PingException {
+		if ("ping".equals(message)) {
+			return "pong";
+		}
+		throw new PingException(String.format("Unsupported message: %s", message));
 	}
 }
