@@ -39,12 +39,22 @@ class HttpInvokerTest {
 	private PingServiceWithMappingPath pingServiceWithMappingPathProxy;
 
 	@Test
-	void testDefaultMappingPath() {
-		assertEquals("pong", pingServiceProxy.ping());
+	void testDefaultMappingPath() throws PingException {
+		assertEquals("pong", pingServiceProxy.ping("ping"));
 	}
 
 	@Test
-	void testSpecifiedMappingPath() {
-		assertEquals("pong", pingServiceWithMappingPathProxy.ping());
+	void testSpecifiedMappingPath() throws PingException {
+		assertEquals("pong", pingServiceWithMappingPathProxy.ping("ping"));
+	}
+
+	@Test
+	public void testException() {
+		try {
+			Assert.assertEquals("pong", pingServiceProxy.ping("pong"));
+			Assert.fail();
+		} catch (PingException e) {
+			Assert.assertEquals("Unsupported message: pong", e.getMessage());
+		}
 	}
 }
