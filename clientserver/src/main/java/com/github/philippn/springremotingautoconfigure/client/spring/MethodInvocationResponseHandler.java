@@ -15,6 +15,8 @@
  */
 package com.github.philippn.springremotingautoconfigure.client.spring;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import org.aopalliance.intercept.MethodInvocation;
@@ -28,10 +30,12 @@ public class MethodInvocationResponseHandler implements HttpClientResponseHandle
 
     private final MethodInvocation methodInvocation;
     private final CBORFactory cborFactory;
+    private final TypeFactory typeFactory;
 
-    public MethodInvocationResponseHandler(MethodInvocation methodInvocation, CBORFactory cborFactory) {
+    public MethodInvocationResponseHandler(MethodInvocation methodInvocation, CBORFactory cborFactory, TypeFactory typeFactory) {
         this.methodInvocation = methodInvocation;
         this.cborFactory = cborFactory;
+        this.typeFactory = typeFactory;
     }
 
     @Override
@@ -48,7 +52,8 @@ public class MethodInvocationResponseHandler implements HttpClientResponseHandle
             boolean success = input.getValueAsBoolean();
             if (success) {
                 input.nextToken();
-                return input.readValueAs(methodInvocation.getMethod().getReturnType());
+                JavaType retType = typeFactory.constructType(methodInvocation.getMethod().getGenericReturnType());
+                return input.getCodec().readValue(input, retType);
             } else {
                 input.nextToken();
                 String exceptionClassName = input.getValueAsString();

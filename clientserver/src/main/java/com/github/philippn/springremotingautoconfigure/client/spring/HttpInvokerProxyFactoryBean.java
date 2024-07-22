@@ -37,11 +37,12 @@ public class HttpInvokerProxyFactoryBean implements FactoryBean<Object>, Initial
 	private Class<?> serviceInterface;
 	private String serviceUrl;
 	private final CloseableHttpClient httpClient = HttpClients.createDefault();
-	private final CBORFactory cborFactory = new CBORFactory(CBORMapper.builder()
+	private final CBORMapper cborMapper = CBORMapper.builder()
 			.visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
 			.addMixIn(Throwable.class, ThrowableMixin.class)
 			.findAndAddModules()
-			.build());
+			.build();
+	private final CBORFactory cborFactory = new CBORFactory(cborMapper);
 
 	@Override
 	public void afterPropertiesSet() {
@@ -58,7 +59,7 @@ public class HttpInvokerProxyFactoryBean implements FactoryBean<Object>, Initial
 		HttpPost post = new HttpPost(serviceUrl);
 		post.setEntity(new MethodInvocationEntity(invocation, cborFactory));
 		try {
-			return httpClient.execute(post, new MethodInvocationResponseHandler(invocation, cborFactory));
+			return httpClient.execute(post, new MethodInvocationResponseHandler(invocation, cborFactory, cborMapper.getTypeFactory()));
 		} catch (MethodInvocationException e) {
 			throw e.getCause();
 		}
