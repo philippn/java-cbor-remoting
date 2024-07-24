@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Philipp Nanz
+ * Copyright (C) 2015-2024 Philipp Nanz
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import com.github.philippn.springremotingautoconfigure.annotation.RemoteExport;
  */
 public class RemotingUtils {
 
-	public static String buildMappingPath(Class<?> serviceInterface) {
-		RemoteExport definition = AnnotationUtils.findAnnotation(
-				serviceInterface, RemoteExport.class);
-		if (definition.mappingPath().length() > 0) {
-			return definition.mappingPath();
-		}
-		return "/remoting/" + serviceInterface.getSimpleName();
-	}
+    public static String buildMappingPath(Class<?> serviceInterface) {
+        RemoteExport definition = AnnotationUtils.findAnnotation(
+                serviceInterface, RemoteExport.class);
+        if (definition.mappingPath().length() > 0) {
+            return definition.mappingPath();
+        }
+        return "/remoting/" + serviceInterface.getSimpleName();
+    }
 }

@@ -13,23 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.philippn.springremotingautoconfigure.server.annotation;
+package com.github.philippn.springremotingautoconfigure.cbor.mixin;
 
-import com.github.philippn.springremotingautoconfigure.server.spring.HttpInvokerServiceExporterRegistrar;
-import org.springframework.context.annotation.Import;
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 
-import java.lang.annotation.*;
-
-/**
- * Annotation to enable automatic remote export of Spring beans.
- * 
- * @author Philipp Nanz
- */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Inherited
-@Import(HttpInvokerServiceExporterRegistrar.class)
-public @interface EnableHttpInvokerAutoExport {
+@JsonIncludeProperties("message")
+public abstract class ThrowableMixin {
 
 }

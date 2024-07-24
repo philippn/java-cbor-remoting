@@ -15,15 +15,16 @@
  */
 package com.github.philippn.springremotingautoconfigure.server.spring;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
 import com.fasterxml.jackson.dataformat.cbor.CBORParser;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
-import com.github.philippn.springremotingautoconfigure.mixin.ThrowableMixin;
+import com.github.philippn.springremotingautoconfigure.cbor.CborMapperFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.Controller;
 
@@ -33,16 +34,13 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class RemotingController implements Controller {
+public class RemotingController implements Controller, InitializingBean {
 
     private Object service;
     private Class<?> serviceInterface;
-
-    private static final CBORFactory cborFactory = new CBORFactory(CBORMapper.builder()
-            .visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-            .addMixIn(Throwable.class, ThrowableMixin.class)
-            .findAndAddModules()
-            .build());
+    private CborMapperFactory cborMapperFactory;
+    private CBORFactory cborFactory;
+    private TypeFactory typeFactory;
 
     public Object getService() {
         return service;
@@ -60,6 +58,21 @@ public class RemotingController implements Controller {
         this.serviceInterface = serviceInterface;
     }
 
+    public CborMapperFactory getCborMapperFactory() {
+        return cborMapperFactory;
+    }
+
+    public void setCborMapperFactory(CborMapperFactory cborMapperFactory) {
+        this.cborMapperFactory = cborMapperFactory;
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        CBORMapper mapper = cborMapperFactory.newMapper();
+        cborFactory = new CBORFactory(mapper);
+        typeFactory = mapper.getTypeFactory();
+    }
+
     @Override
     public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
         try (CBORParser input = cborFactory.createParser(request.getInputStream())) {
@@ -75,9 +88,9 @@ public class RemotingController implements Controller {
             }
             Object[] args = new Object[arity];
             for (int i = 0; i < arity; i++) {
-                Class<?> argumentClazz = method.get().getParameterTypes()[i];
+                JavaType argType = typeFactory.constructType(method.get().getGenericParameterTypes()[i]);
                 input.nextToken();
-                args[i] = input.readValueAs(argumentClazz);
+                args[i] = input.getCodec().readValue(input, argType);
             }
             try {
                 Object ret = method.get().invoke(service, args);

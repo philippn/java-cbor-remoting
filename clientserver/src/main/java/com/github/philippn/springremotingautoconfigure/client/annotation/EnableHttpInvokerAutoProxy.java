@@ -32,8 +32,8 @@ import java.lang.annotation.*;
 @Import(HttpInvokerProxyFactoryBeanRegistrar.class)
 public @interface EnableHttpInvokerAutoProxy {
 
-	/**
-	 * Base packages to scan for interfaces with @RemoteExport annotation.
-	 */
-	String[] basePackages() default {};
+    /**
+     * Base packages to scan for interfaces with @RemoteExport annotation.
+     */
+    String[] basePackages() default {};
 }

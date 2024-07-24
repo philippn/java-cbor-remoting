@@ -24,10 +24,10 @@ import com.github.philippn.springremotingautoconfigure.test.service.exception.Pi
 @RemoteExport(mappingPath="/ThisIsIt")
 public interface PingServiceWithMappingPath {
 
-	/**
-	 * Returns <code>pong</code>.
-	 * @param message the message
-	 * @return <code>pong</code>
-	 */
-	String ping(String message) throws PingException;
+    /**
+     * Returns <code>pong</code>.
+     * @param message the message
+     * @return <code>pong</code>
+     */
+    String ping(String message) throws PingException;
 }

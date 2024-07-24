@@ -27,11 +27,11 @@ import com.github.philippn.springremotingautoconfigure.test.service.PingService;
 @Service
 public class PingServiceImpl implements PingService, PingServiceWithMappingPath {
 
-	@Override
-	public String ping(String message) throws PingException {
-		if ("ping".equals(message)) {
-			return "pong";
-		}
-		throw new PingException(String.format("Unsupported message: %s", message));
-	}
+    @Override
+    public String ping(String message) throws PingException {
+        if ("ping".equals(message)) {
+            return "pong";
+        }
+        throw new PingException(String.format("Unsupported message: %s", message));
+    }
 }

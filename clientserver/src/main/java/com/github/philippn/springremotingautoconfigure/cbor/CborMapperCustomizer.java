@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.philippn.springremotingautoconfigure.mixin;
+package com.github.philippn.springremotingautoconfigure.cbor;
 
-import com.fasterxml.jackson.annotation.JsonIncludeProperties;
+import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 
-@JsonIncludeProperties("message")
-public abstract class ThrowableMixin {
+/**
+ * 
+ */
+public interface CborMapperCustomizer {
 
+    void apply(CBORMapper.Builder builder);
 }

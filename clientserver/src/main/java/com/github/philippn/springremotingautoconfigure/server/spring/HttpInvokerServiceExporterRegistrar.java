@@ -39,63 +39,64 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class HttpInvokerServiceExporterRegistrar implements ImportBeanDefinitionRegistrar {
 
-	static final Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
+    static final Logger logger = LoggerFactory.getLogger(HttpInvokerServiceExporterRegistrar.class);
 
-	private final Set<String> alreadyExportedSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<String> alreadyExportedSet = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	/* (non-Javadoc)
-	 * @see org.springframework.context.annotation.ImportBeanDefinitionRegistrar#registerBeanDefinitions(org.springframework.core.type.AnnotationMetadata, org.springframework.beans.factory.support.BeanDefinitionRegistry)
-	 */
-	@Override
-	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-		for (String beanName : registry.getBeanDefinitionNames()) {
-			BeanDefinition definition = registry.getBeanDefinition(beanName);
-			String className = definition.getBeanClassName();
-			if (className == null && definition.getSource() instanceof MethodMetadata) {
-				className = ((MethodMetadata) definition.getSource()).getReturnTypeName();
-			}
-			if (className != null) {
-				try {
-					Class<?> resolvedClass = ClassUtils.forName(className, null);
-					if (resolvedClass.isInterface()) {
-						if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, resolvedClass)) {
-							setupExport(resolvedClass, beanName, registry);
-						}
-					} else {
-						Class<?>[] beanInterfaces = resolvedClass.getInterfaces();
-						for (Class<?> clazz : beanInterfaces) {
-							if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, clazz)) {
-								setupExport(clazz, beanName, registry);
-							}
-						}	
-					}
-				} catch (ClassNotFoundException e) {
-					throw new IllegalStateException("Unable to inspect class " + 
-							definition.getBeanClassName() + " for @RemoteExport annotations");
-				}
-			}
-		}
-	}
+    /* (non-Javadoc)
+     * @see org.springframework.context.annotation.ImportBeanDefinitionRegistrar#registerBeanDefinitions(org.springframework.core.type.AnnotationMetadata, org.springframework.beans.factory.support.BeanDefinitionRegistry)
+     */
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        for (String beanName : registry.getBeanDefinitionNames()) {
+            BeanDefinition definition = registry.getBeanDefinition(beanName);
+            String className = definition.getBeanClassName();
+            if (className == null && definition.getSource() instanceof MethodMetadata) {
+                className = ((MethodMetadata) definition.getSource()).getReturnTypeName();
+            }
+            if (className != null) {
+                try {
+                    Class<?> resolvedClass = ClassUtils.forName(className, null);
+                    if (resolvedClass.isInterface()) {
+                        if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, resolvedClass)) {
+                            setupExport(resolvedClass, beanName, registry);
+                        }
+                    } else {
+                        Class<?>[] beanInterfaces = resolvedClass.getInterfaces();
+                        for (Class<?> clazz : beanInterfaces) {
+                            if (AnnotationUtils.isAnnotationDeclaredLocally(RemoteExport.class, clazz)) {
+                                setupExport(clazz, beanName, registry);
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Unable to inspect class " +
+                            definition.getBeanClassName() + " for @RemoteExport annotations");
+                }
+            }
+        }
+    }
 
-	protected void setupExport(Class<?> clazz, String beanName, BeanDefinitionRegistry registry) {
-		Assert.isTrue(clazz.isInterface(), 
-				"Annotation @RemoteExport may only be used on interfaces");
-		
-		if (alreadyExportedSet.contains(clazz.getName())) {
-			return;
-		}
-		alreadyExportedSet.add(clazz.getName());
+    protected void setupExport(Class<?> clazz, String beanName, BeanDefinitionRegistry registry) {
+        Assert.isTrue(clazz.isInterface(),
+                "Annotation @RemoteExport may only be used on interfaces");
 
-		BeanDefinitionBuilder builder = BeanDefinitionBuilder
-				.genericBeanDefinition(RemotingController.class)
-				.addPropertyReference("service", beanName)
-				.addPropertyValue("serviceInterface", clazz);
-		AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
-		beanDefinition.setSynthetic(true);
+        if (alreadyExportedSet.contains(clazz.getName())) {
+            return;
+        }
+        alreadyExportedSet.add(clazz.getName());
 
-		String mappingPath = RemotingUtils.buildMappingPath(clazz);
-		registry.registerBeanDefinition(mappingPath, beanDefinition);
+        BeanDefinitionBuilder builder = BeanDefinitionBuilder
+                .genericBeanDefinition(RemotingController.class)
+                .addAutowiredProperty("cborMapperFactory")
+                .addPropertyReference("service", beanName)
+                .addPropertyValue("serviceInterface", clazz);
+        AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
+        beanDefinition.setSynthetic(true);
 
-		logger.info("Mapping HttpInvokerServiceExporter for {} to [{}]", clazz.getSimpleName(), mappingPath);
-	}
+        String mappingPath = RemotingUtils.buildMappingPath(clazz);
+        registry.registerBeanDefinition(mappingPath, beanDefinition);
+
+        logger.info("Mapping HttpInvokerServiceExporter for {} to [{}]", clazz.getSimpleName(), mappingPath);
+    }
 }

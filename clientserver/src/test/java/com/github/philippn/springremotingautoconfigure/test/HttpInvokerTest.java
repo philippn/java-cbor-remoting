@@ -32,31 +32,31 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 class HttpInvokerTest {
 
-	@Autowired
-	@Qualifier("PingServiceProxy")
-	private PingService pingServiceProxy;
+    @Autowired
+    @Qualifier("PingServiceProxy")
+    private PingService pingServiceProxy;
 
-	@Autowired
-	@Qualifier("PingServiceWithMappingPathProxy")
-	private PingServiceWithMappingPath pingServiceWithMappingPathProxy;
+    @Autowired
+    @Qualifier("PingServiceWithMappingPathProxy")
+    private PingServiceWithMappingPath pingServiceWithMappingPathProxy;
 
-	@Test
-	void testDefaultMappingPath() throws PingException {
-		assertEquals("pong", pingServiceProxy.ping("ping"));
-	}
+    @Test
+    void testDefaultMappingPath() throws PingException {
+        assertEquals("pong", pingServiceProxy.ping("ping"));
+    }
 
-	@Test
-	void testSpecifiedMappingPath() throws PingException {
-		assertEquals("pong", pingServiceWithMappingPathProxy.ping("ping"));
-	}
+    @Test
+    void testSpecifiedMappingPath() throws PingException {
+        assertEquals("pong", pingServiceWithMappingPathProxy.ping("ping"));
+    }
 
-	@Test
-	public void testException() {
-		try {
-			assertEquals("pong", pingServiceProxy.ping("pong"));
-			fail();
-		} catch (PingException e) {
-			assertEquals("Unsupported message: pong", e.getMessage());
-		}
-	}
+    @Test
+    public void testException() {
+        try {
+            assertEquals("pong", pingServiceProxy.ping("pong"));
+            fail();
+        } catch (PingException e) {
+            assertEquals("Unsupported message: pong", e.getMessage());
+        }
+    }
 }
