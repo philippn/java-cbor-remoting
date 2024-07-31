@@ -2,15 +2,13 @@ About
 =====
 
 This repository contains a proof of concept for easily establishing 
-client-server communication using Spring Remoting in Java.
+client-server communication using ~~Spring Remoting~~ CBOR in Java.
 
-Spring’s HTTP invoker is a good choice if you need HTTP-based remoting but also 
-rely on Java serialization. It can be cumbersome to configure though because every 
-new service that you wish to share among server and client needs to be registered 
-in both application contexts manually via XML configuration.
+Originally this repository contained a convenient approach to leveraging Springs HTTP Invoker for client-server communication. However, with the advent of Spring Framework 6 the underlying infrastructure was removed for security purposes.
 
-This proof of concept showcases a more convenient approach, leveraging 
-annotation based configuration and class path scanning.
+Now this repository contains a similar client-server remoting interface, but instead of Java serialization it is now utilising CBOR for data exchange. CBOR is similar in characteristics to JSON, but more efficient because it is using binary encoding for data representation.
+
+Generally speaking, this approach works quite well, but has some caveats with regard to the objets that are being transferred. The approach works best with simple POJOs. With other, more complex Java-classes custom serialization hints might be needed. Such can be supplied using mixins for Jackson.
 
 Basic Concept
 =============
